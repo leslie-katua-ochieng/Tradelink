@@ -6,7 +6,9 @@ module.exports = router ;
 
 const Service = require('../schema/services');
 const Provider = require('../schema/providers');
-
+const Order = require('../schema/orders');
+const Invoice = require('../schema/invoice');
+const Checkout = require('../schema/checkout');
 const upload = multer()
 
 
@@ -102,4 +104,65 @@ router.get('/providers', async (req, res) => {
 });
 
 
+router.post('/orders', async (req, res) => {
+  const {  name, price } = req.body.orders;
+  try {
+      // Create a new order instance
+      const order = new Order({  name, price });
 
+      // Save the order to the database
+      await order.save();
+      res.send(order);
+  } catch (error) {
+    console.log(error);
+    resizeBy.status(500).send(error);
+  }
+});
+
+
+router.post('/checkout', async (req, res) => {
+  try {
+    const { firstName, lastName, email, phoneNumber, address, cart, totalPrice } = req.body;
+
+    const newCheckout = new Checkout({
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      address,
+      cart,
+      totalPrice,
+      status: 'pending' // Set default status to pending
+    });
+
+    await newCheckout.save();
+
+    res.status(201).json({ message: 'Checkout successful', checkout: newCheckout });
+  } catch (error) {
+    console.error('Error during checkout:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.get('/checkout', async (req, res) => {
+  try {
+    const checkout = await Checkout.find({});
+    res.send(checkout);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+  }
+});
+
+router.put('/checkout/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const updatedCheckout = await Checkout.findByIdAndUpdate(id, { status }, { new: true });
+    res.json({ message: 'Checkout status updated successfully', checkout: updatedCheckout });
+  } catch (error) {
+    console.error('Error updating checkout status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
